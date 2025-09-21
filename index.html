@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 24px;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-3xl shadow-lg mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800">Controle de Estoque</h1>
+            <div class="mt-4 md:mt-0 text-sm text-gray-500 font-medium" id="user-info">
+                Carregando usuário...
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Coluna 1: Listas de Dados -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Seção: Itens em Estoque -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-4">Itens em Estoque</h2>
+                    <div id="loading" class="text-center py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-blue-500 mx-auto"></div>
+                        <p class="mt-2 text-gray-500">Carregando dados...</p>
+                    </div>
+                    <div id="inventory-list" class="grid gap-4">
+                        <!-- Cards de produtos serão inseridos aqui pelo JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Seção: Ferramentas -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-4">Ferramentas</h2>
+                    <div id="tools-list" class="grid gap-4">
+                        <!-- Cards de ferramentas serão inseridos aqui pelo JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Seção: Usuários -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-4">Usuários do Sistema</h2>
+                    <div id="users-list" class="grid gap-4">
+                        <!-- Cards de usuários serão inseridos aqui pelo JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Formulários e Resumos -->
+            <div class="space-y-8">
+                <!-- Seção de Registro de Uso (Materiais) -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-4">Registrar Uso (Materiais)</h2>
+                    <form id="usage-form" class="space-y-4">
+                        <div>
+                            <label for="usage-product" class="block text-sm font-medium text-gray-700">Produto</label>
+                            <select id="usage-product" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                                <option value="">Selecione um produto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="usage-quantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
+                            <input type="number" id="usage-quantity" min="1" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                        </div>
+                        <div>
+                            <label for="usage-aircraft" class="block text-sm font-medium text-gray-700">Aeronave Utilizada</label>
+                            <input type="text" id="usage-aircraft" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors shadow-md">
+                            Registrar Saída
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Seção de Adicionar Novo Produto (Materiais) -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-4">Adicionar/Atualizar Produto</h2>
+                    <form id="add-product-form" class="space-y-4">
+                        <div>
+                            <label for="add-product-name" class="block text-sm font-medium text-gray-700">Nome do Produto</label>
+                            <input type="text" id="add-product-name" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                        </div>
+                        <div>
+                            <label for="add-product-type" class="block text-sm font-medium text-gray-700">Tipo</label>
+                            <input type="text" id="add-product-type" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                        </div>
+                        <div>
+                            <label for="add-product-stock" class="block text-sm font-medium text-gray-700">Quantidade</label>
+                            <input type="number" id="add-product-stock" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-700 transition-colors shadow-md">
+                            Adicionar/Atualizar Estoque
+                        </button>
+                    </form>
+                </div>
+
+                 <!-- Seção: Adicionar Ferramenta -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-4">Adicionar Ferramenta</h2>
+                    <form id="add-tool-form" class="space-y-4">
+                        <div>
+                            <label for="tool-name" class="block text-sm font-medium text-gray-700">Nome da Ferramenta</label>
+                            <input type="text" id="tool-name" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                        </div>
+                        <div>
+                            <label for="tool-status" class="block text-sm font-medium text-gray-700">Status</label>
+                            <select id="tool-status" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2.5">
+                                <option value="Disponível">Disponível</option>
+                                <option value="Em Uso">Em Uso</option>
+                                <option value="Em Manutenção">Em Manutenção</option>
+                            </select>
+                        </div>
+                         <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-purple-700 transition-colors shadow-md">
+                            Adicionar Ferramenta
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Mensagens -->
+    <div id="message-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button text-gray-500 hover:text-gray-700 text-2xl font-bold cursor-pointer absolute top-4 right-6">&times;</span>
+            <div id="modal-message" class="text-lg font-semibold text-gray-800"></div>
+            <button id="modal-close-btn" class="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, updateDoc, onSnapshot, collection, query, where, getDocs, setLogLevel, getDocFromCache, getDocsFromCache, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais fornecidas pelo ambiente
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        const productsCollectionName = 'products';
+        const transactionsCollectionName = 'transactions';
+        const usersCollectionName = 'users';
+        const toolsCollectionName = 'tools';
+
+        setLogLevel('debug'); // Ativar logs de depuração para Firebase
+
+        // Elementos do DOM
+        const userInfoEl = document.getElementById('user-info');
+        const inventoryListEl = document.getElementById('inventory-list');
+        const usageForm = document.getElementById('usage-form');
+        const usageProductSelect = document.getElementById('usage-product');
+        const usageQuantityInput = document.getElementById('usage-quantity');
+        const usageAircraftInput = document.getElementById('usage-aircraft');
+        const addProductForm = document.getElementById('add-product-form');
+        const addProductNameInput = document.getElementById('add-product-name');
+        const addProductTypeInput = document.getElementById('add-product-type');
+        const addProductStockInput = document.getElementById('add-product-stock');
+        const addToolForm = document.getElementById('add-tool-form');
+        const toolNameInput = document.getElementById('tool-name');
+        const toolStatusSelect = document.getElementById('tool-status');
+        const loadingEl = document.getElementById('loading');
+        const toolsListEl = document.getElementById('tools-list');
+        const usersListEl = document.getElementById('users-list');
+        const modal = document.getElementById('message-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // Função para mostrar o modal
+        function showModal(message) {
+            modalMessage.textContent = message;
+            modal.style.display = 'block';
+        }
+
+        // Função para fechar o modal
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        modalCloseBtn.onclick = closeModal;
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+        document.querySelector('.close-button').onclick = closeModal;
+
+        // Função de inicialização do Firebase e autenticação
+        async function initializeFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                showModal("Erro de configuração: firebaseConfig está vazio.");
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userInfoEl.innerHTML = `ID do Usuário: <span class="font-semibold text-gray-800">${userId}</span>`;
+                        // Registrar o usuário se ainda não existir
+                        const userDocRef = doc(db, `artifacts/${appId}/public/data/${usersCollectionName}`, userId);
+                        const userDoc = await getDoc(userDocRef);
+                        if (!userDoc.exists()) {
+                            await setDoc(userDocRef, { name: 'Usuário Anônimo', createdAt: new Date().toISOString() });
+                        }
+                        attachListeners();
+                    } else {
+                        // Tentar autenticação anônima se o token não estiver disponível
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            showModal(`Erro de autenticação: ${error.message}`);
+                            console.error("Erro de autenticação:", error);
+                        }
+                    }
+                });
+            } catch (error) {
+                showModal(`Erro ao inicializar o Firebase: ${error.message}`);
+                console.error("Erro ao inicializar o Firebase:", error);
+            }
+        }
+
+        // Função para anexar os listeners do Firestore
+        function attachListeners() {
+            // Listener para Produtos
+            const productsPath = `artifacts/${appId}/public/data/${productsCollectionName}`;
+            const productsRef = collection(db, productsPath);
+            onSnapshot(productsRef, (snapshot) => {
+                loadingEl.style.display = 'none';
+                const products = [];
+                const productsSelectOptions = new Set();
+                snapshot.forEach((doc) => {
+                    const productData = { id: doc.id, ...doc.data() };
+                    products.push(productData);
+                    productsSelectOptions.add(productData.name);
+                });
+                renderInventoryList(products);
+                renderProductSelect(Array.from(productsSelectOptions));
+            }, (error) => {
+                showModal(`Erro ao carregar o estoque: ${error.message}`);
+                console.error("Erro ao carregar o estoque:", error);
+                loadingEl.style.display = 'none';
+            });
+
+            // Listener para Ferramentas
+            const toolsPath = `artifacts/${appId}/public/data/${toolsCollectionName}`;
+            const toolsRef = collection(db, toolsPath);
+            onSnapshot(toolsRef, (snapshot) => {
+                const tools = [];
+                snapshot.forEach((doc) => {
+                    tools.push({ id: doc.id, ...doc.data() });
+                });
+                renderToolsList(tools);
+            }, (error) => {
+                showModal(`Erro ao carregar as ferramentas: ${error.message}`);
+                console.error("Erro ao carregar as ferramentas:", error);
+            });
+
+            // Listener para Usuários
+            const usersPath = `artifacts/${appId}/public/data/${usersCollectionName}`;
+            const usersRef = collection(db, usersPath);
+            onSnapshot(usersRef, (snapshot) => {
+                const users = [];
+                snapshot.forEach((doc) => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                renderUsersList(users);
+            }, (error) => {
+                showModal(`Erro ao carregar os usuários: ${error.message}`);
+                console.error("Erro ao carregar os usuários:", error);
+            });
+        }
+
+        // Renderiza a lista de estoque
+        function renderInventoryList(products) {
+            inventoryListEl.innerHTML = '';
+            if (products.length === 0) {
+                inventoryListEl.innerHTML = '<p class="text-gray-500 text-center">Nenhum produto encontrado. Adicione um para começar!</p>';
+                return;
+            }
+
+            products.sort((a, b) => a.name.localeCompare(b.name)).forEach(product => {
+                const statusColor = product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const cardHtml = `
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="mb-4 md:mb-0">
+                            <div class="font-bold text-lg text-gray-800">${product.name}</div>
+                            <div class="text-sm text-gray-500">${product.type}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-2xl text-gray-900">${product.stock}</div>
+                            <div class="text-sm font-semibold mt-1 py-1 px-3 rounded-full ${statusColor}">
+                                ${product.stock > 0 ? 'Em estoque' : 'Esgotado'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                inventoryListEl.innerHTML += cardHtml;
+            });
+        }
+
+        // Renderiza a lista de ferramentas
+        function renderToolsList(tools) {
+            toolsListEl.innerHTML = '';
+            if (tools.length === 0) {
+                toolsListEl.innerHTML = '<p class="text-gray-500 text-center">Nenhuma ferramenta encontrada. Adicione uma!</p>';
+                return;
+            }
+            tools.sort((a, b) => a.name.localeCompare(b.name)).forEach(tool => {
+                const statusColor = tool.status === 'Disponível' ? 'bg-green-100 text-green-800' : (tool.status === 'Em Uso' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800');
+                const cardHtml = `
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="mb-4 md:mb-0">
+                            <div class="font-bold text-lg text-gray-800">${tool.name}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold mt-1 py-1 px-3 rounded-full ${statusColor}">
+                                ${tool.status}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                toolsListEl.innerHTML += cardHtml;
+            });
+        }
+
+        // Renderiza a lista de usuários
+        function renderUsersList(users) {
+            usersListEl.innerHTML = '';
+            if (users.length === 0) {
+                usersListEl.innerHTML = '<p class="text-gray-500 text-center">Nenhum usuário encontrado.</p>';
+                return;
+            }
+            users.forEach(user => {
+                const cardHtml = `
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="mb-4 md:mb-0">
+                            <div class="font-bold text-lg text-gray-800">${user.name}</div>
+                            <div class="text-sm text-gray-500 break-all">ID: ${user.id}</div>
+                        </div>
+                    </div>
+                `;
+                usersListEl.innerHTML += cardHtml;
+            });
+        }
+
+        // Preenche o seletor de produtos no formulário de uso
+        function renderProductSelect(productNames) {
+            usageProductSelect.innerHTML = '<option value="">Selecione um produto</option>';
+            productNames.sort().forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                usageProductSelect.appendChild(option);
+            });
+        }
+
+        // Manipula o envio do formulário de uso
+        usageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productName = usageProductSelect.value;
+            const quantityUsed = parseInt(usageQuantityInput.value, 10);
+            const aircraft = usageAircraftInput.value;
+
+            if (!productName || !quantityUsed || !aircraft) {
+                showModal('Por favor, preencha todos os campos.');
+                return;
+            }
+            if (quantityUsed <= 0) {
+                showModal('A quantidade deve ser maior que zero.');
+                return;
+            }
+
+            try {
+                const productsRef = collection(db, `artifacts/${appId}/public/data/${productsCollectionName}`);
+                const q = query(productsRef, where("name", "==", productName));
+                const querySnapshot = await getDocsFromCache(q);
+
+                if (querySnapshot.empty) {
+                    showModal('Produto não encontrado.');
+                    return;
+                }
+
+                const doc = querySnapshot.docs[0];
+                const productData = doc.data();
+                const currentStock = productData.stock;
+
+                if (currentStock < quantityUsed) {
+                    showModal(`Estoque insuficiente. Disponível: ${currentStock}`);
+                    return;
+                }
+
+                // Atualizar o estoque
+                const newStock = currentStock - quantityUsed;
+                await updateDoc(doc.ref, { stock: newStock });
+
+                // Registrar a transação
+                const transactionsRef = collection(db, `artifacts/${appId}/public/data/${transactionsCollectionName}`);
+                await addDoc(transactionsRef, {
+                    productName,
+                    type: 'Saída',
+                    quantity: quantityUsed,
+                    aircraft,
+                    timestamp: new Date().toISOString(),
+                    userId
+                });
+
+                showModal('Uso registrado com sucesso!');
+                usageForm.reset();
+            } catch (error) {
+                showModal(`Erro ao registrar o uso: ${error.message}`);
+                console.error("Erro ao registrar o uso:", error);
+            }
+        });
+
+        // Manipula o envio do formulário de adicionar/atualizar produto
+        addProductForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productName = addProductNameInput.value;
+            const productType = addProductTypeInput.value;
+            const productStock = parseInt(addProductStockInput.value, 10);
+
+            if (!productName || !productType || isNaN(productStock)) {
+                showModal('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+            if (productStock < 0) {
+                showModal('A quantidade de estoque não pode ser negativa.');
+                return;
+            }
+
+            try {
+                const productsRef = collection(db, `artifacts/${appId}/public/data/${productsCollectionName}`);
+                const q = query(productsRef, where("name", "==", productName));
+                const querySnapshot = await getDocsFromCache(q);
+
+                if (!querySnapshot.empty) {
+                    // Produto já existe, atualizar o estoque
+                    const doc = querySnapshot.docs[0];
+                    const currentStock = doc.data().stock;
+                    const newStock = currentStock + productStock;
+                    await updateDoc(doc.ref, { stock: newStock });
+                    showModal(`Estoque do produto "${productName}" atualizado com sucesso!`);
+                } else {
+                    // Novo produto, adicionar
+                    await addDoc(productsRef, {
+                        name: productName,
+                        type: productType,
+                        stock: productStock,
+                        status: productStock > 0 ? "Em stock" : "Esgotado"
+                    });
+                    showModal(`Produto "${productName}" adicionado com sucesso!`);
+                }
+                addProductForm.reset();
+            } catch (error) {
+                showModal(`Erro ao adicionar/atualizar o produto: ${error.message}`);
+                console.error("Erro ao adicionar/atualizar o produto:", error);
+            }
+        });
+
+        // Manipula o envio do formulário de adicionar ferramenta
+        addToolForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const toolName = toolNameInput.value;
+            const toolStatus = toolStatusSelect.value;
+
+            if (!toolName || !toolStatus) {
+                showModal('Por favor, preencha todos os campos.');
+                return;
+            }
+
+            try {
+                const toolsRef = collection(db, `artifacts/${appId}/public/data/${toolsCollectionName}`);
+                await addDoc(toolsRef, {
+                    name: toolName,
+                    status: toolStatus,
+                    addedBy: userId,
+                    createdAt: new Date().toISOString()
+                });
+                showModal(`Ferramenta "${toolName}" adicionada com sucesso!`);
+                addToolForm.reset();
+            } catch (error) {
+                showModal(`Erro ao adicionar a ferramenta: ${error.message}`);
+                console.error("Erro ao adicionar a ferramenta:", error);
+            }
+        });
+
+        window.onload = initializeFirebase;
+
+    </script>
+</body>
+</html>
